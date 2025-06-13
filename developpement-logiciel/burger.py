@@ -97,7 +97,13 @@ def get_sauce():
 
 
 def get_cheese():
-    available_cheeses = ["cheddar", "emmental", "mozzarella", "blue cheese", "goat cheese"]
+    available_cheeses = [
+        "cheddar",
+        "emmental",
+        "mozzarella",
+        "blue cheese",
+        "goat cheese",
+    ]
     logging.info("Available cheeses: " + ", ".join(available_cheeses))
 
     cheese_type = input("What kind of cheese? ").strip().lower()
