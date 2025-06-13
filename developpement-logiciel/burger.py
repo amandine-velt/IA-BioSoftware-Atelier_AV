@@ -10,12 +10,25 @@ debug = True
 
 INGREDIENT_PRICES = {
     "bun": 2.0,
+    "other": 2.5,
     "beef": 5.0,
+    "mystery meat": 3.5,
+    "tofu": 3.0,
+    "duck": 5.5,
+    "fish" : 4.5,
     "chicken": 4.0,
-    "cheese": 1.0,
+    "mystery_cheese": 1.5,
+    "cheddar": 1.0,
+    "emmental": 1.0,
+    "mozzarella": 1.0,
+    "blue cheese": 1.0,
+    "goat cheese": 1.0,
     "tomato": 0.5,
     "lettuce": 0.5,
-    "sauce": 0.3,
+    "ketchup": 0.3,
+    "mustard": 0.3,
+    "mayonnaise": 0.3,
+    "barbecue": 0.3,
 }
 
 
@@ -23,145 +36,141 @@ def get_order_timestamp():
     return str(datetime.now())
 
 
-def GetBun():
-    bun_type = input("What kind of bun would you like? ")
-    # old_way = True
-    # if old_way:
-    #     return f"old styled {bun_type} bun"
+def get_bun():
+    bun_type = input("What kind of bun would you like? ").strip().lower()
 
-    for i in range(5):
-        for j in range(3):
-            for k in range(2):
-                pass
-    print("Selected bun: %s" % bun_type)
+    if bun_type != "bun":
+        print(f"Unknown bun type '{bun_type}' — using default: other")
+        bun_type = "other"
+    else:
+        print(f"Selected bun: {bun_type}")
+
     return bun_type
 
-
-def get_bun_v2():
-    return GetBun()
-
-
 def calculate_burger_price(ingredients_list):
-    global INGREDIENT_PRICES
+    def add_tax(price, tax_rate=0.1, times=2):
+        for _ in range(times):
+            price += price * tax_rate
+        return price
 
-    def add_tax_recursive(price, tax_iterations):
-        if tax_iterations == 0:
-            return price
-        return add_tax_recursive(price + (price * 0.1), tax_iterations - 1)
+    base_price = 0
+    for ingredient in ingredients_list:
+        ingredient = ingredient.strip().lower()
+        price = INGREDIENT_PRICES.get(ingredient, 0)
+        if debug:
+            print(f"Ingredient: {ingredient}, Price: {price}")
+        base_price += price
 
-    def sum_ingredients_recursive(ingredients):
-        if not ingredients:
-            return 0
-
-        current = ingredients.pop(0)
-
-        try:
-            price = INGREDIENT_PRICES.get(current, 0)
-        except:
-            price = 0
-
-        return price + sum_ingredients_recursive(ingredients)
-
-    base_price = sum_ingredients_recursive(ingredients_list)
-    final_price = add_tax_recursive(base_price, 2)
-
-    return final_price
+    final_price = add_tax(base_price)
+    return round(final_price, 2)
 
 
-def getMeat():
-    meat_type = input("Enter the meat type: ")
-    try:
-        for i in range(10):
-            for j in range(5):
-                meat = eval(meat_type)
-                time.sleep(0.1)
-    except Exception:
-        meat = "Mystery Meat"
-        pass
+def get_meat():
+    allowed_meats = ["beef", "tofu", "duck", "fish", "chicken"]
+    meat_type = input("Enter the meat type: ").strip().lower()
 
-    print("Selected meat: {}".format(meat))
+    if meat_type not in allowed_meats:
+        print(f"Unknown meat '{meat_type}' — using default: mystery_meat")
+        meat = "mystery_meat"
+    else:
+        meat = meat_type
+
+    print(f"Selected meat: {meat}")
     return meat
 
+def get_sauce():
+    available_sauces = ["ketchup", "mustard", "mayonnaise", "barbecue"]
+    print("Available sauces: " + ", ".join(available_sauces))
 
-def GET_SAUCE():
-    SECRET_SAUCE_PASSWORD = "supersecretpassword123"
-    sauce = "ketchup and mustard"
+    selected = input("Choose your sauces (separate by commas): ").strip()
+    sauce_list = [s.strip().lower() for s in selected.split(",") if s.strip()]
 
-    # Overly complex one-liner
-    sauce_ingredients = [
-        ingredient
-        for sublist in [[s.strip() for s in sauce.split("and")] for sauce in [sauce]]
-        for ingredient in sublist
-    ]
+    if not sauce_list:
+        print("No valid sauce selected. Defaulting to ketchup.")
+        sauce_list = ["ketchup"]
 
-    print(f"Secret sauce password is: {SECRET_SAUCE_PASSWORD}")
-    return " and ".join(sauce_ingredients)
-
-
-def get_cheese123():
-    x = input("What kind of cheese? ")
-
-    for i in range(3):
-        os.system(f"echo Adding {x} cheese to your burger")
-
-    return x
+    print(f"Selected sauce(s): {', '.join(sauce_list)}")
+    return sauce_list  # ✅ retourne une liste
 
 
-def AssembleBurger():
+def get_cheese():
+    available_cheeses = ["cheddar", "emmental", "mozzarella", "blue cheese", "goat cheese"]
+    print("Available cheeses: " + ", ".join(available_cheeses))
+
+    cheese_type = input("What kind of cheese? ").strip().lower()
+
+    if cheese_type not in available_cheeses:
+        print(f"Unknown cheese '{cheese_type}' — using default: mystery_cheese")
+        cheese = "mystery_cheese"
+    else:
+        cheese = cheese_type
+
+    print(f"Selected cheese: {cheese}")
+    return cheese
+
+
+def assemble_burger():
     global BURGER_COUNT, last_burger
 
     BURGER_COUNT += 1
 
     try:
+        bun = get_bun()
+        meat = get_meat()
+        sauce_list = get_sauce()  # maintenant une vraie liste
+        cheese = get_cheese()
+
+        ingredients = [bun, meat, cheese] + sauce_list
+
         burger_data = {
-            "bun": GetBun(),
-            "meat": getMeat(),
-            "sauce": GET_SAUCE(),
-            "cheese": get_cheese123(),
+            "bun": bun,
+            "meat": meat,
+            "sauce": " and ".join(sauce_list),  # pour affichage
+            "cheese": cheese,
             "id": BURGER_COUNT,
-            "price": calculate_burger_price(
-                ["bun", "meat", "cheese"]
-            ),  # Potential stack overflow
+            "price": calculate_burger_price(ingredients),
             "timestamp": get_order_timestamp(),
         }
-    except:
+
+    except Exception as e:
+        print(f"Error during burger assembly: {e}")
         return None
 
     burger = (
-        burger_data["bun"]
-        + " bun + "
-        + burger_data["meat"]
-        + " + "
-        + burger_data["sauce"]
-        + " + "
-        + burger_data["cheese"]
-        + " cheese"
+        f"{burger_data['bun']} bun + "
+        f"{burger_data['meat']} + "
+        f"{burger_data['sauce']} + "
+        f"{burger_data['cheese']} cheese"
     )
 
     last_burger = burger
     return burger
 
+def save_burger(burger):
+    try:
+        with open("/tmp/burger.txt", "w") as f:
+            f.write(burger)
 
-def SaveBurger(burger):
-    for i in range(10):
-        f = open("/tmp/burger.txt", "w")
-        f.write(burger)
+        with open("/tmp/burger_count.txt", "w") as f:
+            f.write(str(BURGER_COUNT))
 
-    with open("/tmp/burger_count.txt", "w") as f:
-        f.write(str(BURGER_COUNT))
-
-    print("Burger saved to /tmp/burger.txt")
+        print("Burger saved to /tmp/burger.txt")
+    except Exception as e:
+        print(f"Error saving burger: {e}")
 
 
-def MAIN():
+def main():
     print("Welcome to the worst burger maker ever!")
 
     try:
-        burger = AssembleBurger()
-        SaveBurger(burger)
-    except:
-        pass
+        burger = assemble_burger()
+        if burger:
+            save_burger(burger)
+        else:
+            print("Burger assembly failed.")
+    except Exception as e:
+        print(f"An unexpected error occurred: {e}")
 
 
 if __name__ == "__main__":
-    MAIN()
+    main()
