@@ -56,6 +56,7 @@ def get_bun():
 
 def calculate_burger_price(ingredients_list):
     """Calcule le prix final du burger avec taxes à partir des ingrédients."""
+
     def add_tax(price, tax_rate=0.1, times=1):
         for _ in range(times):
             price += price * tax_rate
@@ -170,11 +171,15 @@ def assemble_burger():
 def save_burger(burger):
     """Sauvegarde un burger et son compteur dans des fichiers temporaires."""
     try:
-        with tempfile.NamedTemporaryFile("w", delete=False, prefix="burger_", suffix=".txt") as f:
+        with tempfile.NamedTemporaryFile(
+            "w", delete=False, prefix="burger_", suffix=".txt"
+        ) as f:
             f.write(burger)
             burger_path = f.name
 
-        with tempfile.NamedTemporaryFile("w", delete=False, prefix="burger_count_", suffix=".txt") as f:
+        with tempfile.NamedTemporaryFile(
+            "w", delete=False, prefix="burger_count_", suffix=".txt"
+        ) as f:
             f.write(str(BURGER_COUNT))
             count_path = f.name
 

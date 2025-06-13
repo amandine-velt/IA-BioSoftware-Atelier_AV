@@ -96,6 +96,7 @@ def test_assemble_burger(monkeypatch):
     assert "cheddar cheese" in burger
     assert "Total price:" in burger
 
+
 # --- Test d’écriture fichier avec fichier temporaire ---
 def test_save_burger_creates_files(tmp_path, monkeypatch):
     import tempfile
@@ -154,6 +155,7 @@ def test_save_burger_creates_files(tmp_path, monkeypatch):
     assert "cheddar cheese" in burger_file.read_text()
     assert int(count_file.read_text()) == 1
 
+
 def test_main(monkeypatch, caplog):
     inputs = iter(["bun", "beef", "ketchup", "cheddar"])
     monkeypatch.setattr("builtins.input", lambda _: next(inputs))
@@ -165,4 +167,3 @@ def test_main(monkeypatch, caplog):
 
     logs = "\n".join(caplog.messages)
     assert "Total price" in logs
-
