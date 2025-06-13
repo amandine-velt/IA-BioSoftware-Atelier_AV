@@ -1,8 +1,9 @@
-# This code is a humorous and intentionally convoluted burger-making script.
-
 import os
 import time
+import logging
 from datetime import datetime
+
+logging.basicConfig(level=logging.INFO)
 
 BURGER_COUNT = 0
 last_burger = None
@@ -15,7 +16,7 @@ INGREDIENT_PRICES = {
     "mystery meat": 3.5,
     "tofu": 3.0,
     "duck": 5.5,
-    "fish" : 4.5,
+    "fish": 4.5,
     "chicken": 4.0,
     "mystery_cheese": 1.5,
     "cheddar": 1.0,
@@ -40,15 +41,16 @@ def get_bun():
     bun_type = input("What kind of bun would you like? ").strip().lower()
 
     if bun_type != "bun":
-        print(f"Unknown bun type '{bun_type}' — using default: other")
+        logging.info(f"Unknown bun type '{bun_type}' — using default: other")
         bun_type = "other"
     else:
-        print(f"Selected bun: {bun_type}")
+        logging.info(f"Selected bun: {bun_type}")
 
     return bun_type
 
+
 def calculate_burger_price(ingredients_list):
-    def add_tax(price, tax_rate=0.1, times=2):
+    def add_tax(price, tax_rate=0.1, times=1):
         for _ in range(times):
             price += price * tax_rate
         return price
@@ -58,7 +60,7 @@ def calculate_burger_price(ingredients_list):
         ingredient = ingredient.strip().lower()
         price = INGREDIENT_PRICES.get(ingredient, 0)
         if debug:
-            print(f"Ingredient: {ingredient}, Price: {price}")
+            logging.info(f"Ingredient: {ingredient}, Price: {price}")
         base_price += price
 
     final_price = add_tax(base_price)
@@ -70,42 +72,43 @@ def get_meat():
     meat_type = input("Enter the meat type: ").strip().lower()
 
     if meat_type not in allowed_meats:
-        print(f"Unknown meat '{meat_type}' — using default: mystery_meat")
+        logging.info(f"Unknown meat '{meat_type}' — using default: mystery_meat")
         meat = "mystery_meat"
     else:
         meat = meat_type
 
-    print(f"Selected meat: {meat}")
+    logging.info(f"Selected meat: {meat}")
     return meat
+
 
 def get_sauce():
     available_sauces = ["ketchup", "mustard", "mayonnaise", "barbecue"]
-    print("Available sauces: " + ", ".join(available_sauces))
+    logging.info("Available sauces: " + ", ".join(available_sauces))
 
     selected = input("Choose your sauces (separate by commas): ").strip()
     sauce_list = [s.strip().lower() for s in selected.split(",") if s.strip()]
 
     if not sauce_list:
-        print("No valid sauce selected. Defaulting to ketchup.")
+        logging.info("No valid sauce selected. Defaulting to ketchup.")
         sauce_list = ["ketchup"]
 
-    print(f"Selected sauce(s): {', '.join(sauce_list)}")
-    return sauce_list  # ✅ retourne une liste
+    logging.info(f"Selected sauce(s): {', '.join(sauce_list)}")
+    return sauce_list
 
 
 def get_cheese():
     available_cheeses = ["cheddar", "emmental", "mozzarella", "blue cheese", "goat cheese"]
-    print("Available cheeses: " + ", ".join(available_cheeses))
+    logging.info("Available cheeses: " + ", ".join(available_cheeses))
 
     cheese_type = input("What kind of cheese? ").strip().lower()
 
     if cheese_type not in available_cheeses:
-        print(f"Unknown cheese '{cheese_type}' — using default: mystery_cheese")
+        logging.info(f"Unknown cheese '{cheese_type}' — using default: mystery_cheese")
         cheese = "mystery_cheese"
     else:
         cheese = cheese_type
 
-    print(f"Selected cheese: {cheese}")
+    logging.info(f"Selected cheese: {cheese}")
     return cheese
 
 
@@ -117,7 +120,7 @@ def assemble_burger():
     try:
         bun = get_bun()
         meat = get_meat()
-        sauce_list = get_sauce()  # maintenant une vraie liste
+        sauce_list = get_sauce()
         cheese = get_cheese()
 
         ingredients = [bun, meat, cheese] + sauce_list
@@ -125,7 +128,7 @@ def assemble_burger():
         burger_data = {
             "bun": bun,
             "meat": meat,
-            "sauce": " and ".join(sauce_list),  # pour affichage
+            "sauce": " and ".join(sauce_list),
             "cheese": cheese,
             "id": BURGER_COUNT,
             "price": calculate_burger_price(ingredients),
@@ -133,18 +136,20 @@ def assemble_burger():
         }
 
     except Exception as e:
-        print(f"Error during burger assembly: {e}")
+        logging.error(f"Error during burger assembly: {e}")
         return None
 
     burger = (
         f"{burger_data['bun']} bun + "
         f"{burger_data['meat']} + "
         f"{burger_data['sauce']} + "
-        f"{burger_data['cheese']} cheese"
+        f"{burger_data['cheese']} cheese\n"
+        f"Total price: {burger_data['price']} €"
     )
 
     last_burger = burger
     return burger
+
 
 def save_burger(burger):
     try:
@@ -154,22 +159,23 @@ def save_burger(burger):
         with open("/tmp/burger_count.txt", "w") as f:
             f.write(str(BURGER_COUNT))
 
-        print("Burger saved to /tmp/burger.txt")
+        logging.info("Burger saved to /tmp/burger.txt")
     except Exception as e:
-        print(f"Error saving burger: {e}")
+        logging.error(f"Error saving burger: {e}")
 
 
 def main():
-    print("Welcome to the worst burger maker ever!")
+    logging.info("Welcome to the worst burger maker ever!")
 
     try:
         burger = assemble_burger()
         if burger:
             save_burger(burger)
+            logging.info(f"Final burger composition/price : {burger}")
         else:
-            print("Burger assembly failed.")
+            logging.info("Burger assembly failed.")
     except Exception as e:
-        print(f"An unexpected error occurred: {e}")
+        logging.error(f"An unexpected error occurred: {e}")
 
 
 if __name__ == "__main__":
