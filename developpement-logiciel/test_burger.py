@@ -1,7 +1,6 @@
 import re
-from pytest import approx
-
 import builtins
+from pytest import approx
 from burger import (
     get_order_timestamp,
     get_bun,
@@ -96,29 +95,42 @@ def test_assemble_burger(monkeypatch):
     assert "Total price:" in burger
 
 
-# --- Test d’écriture fichier (avec redirection via tmp_path) ---
+# --- Test d’écriture fichier avec fichier temporaire ---
 
 
-def test_save_burger(tmp_path, monkeypatch):
-    test_burger = "test bun + test meat + test sauce + test cheese\nTotal price: 9.99 €"
-    tmp_burger_file = tmp_path / "burger.txt"
-    tmp_count_file = tmp_path / "burger_count.txt"
+def test_save_burger_creates_files(tmp_path, monkeypatch):
+    test_burger = "bun + beef + ketchup + cheddar cheese\nTotal price: 9.99 €"
 
-    real_open = builtins.open
+    # Monkeypatch NamedTemporaryFile pour écrire dans tmp_path
+    def temp_file_mock(*args, **kwargs):
+        suffix = kwargs.get("suffix", "")
+        name = "burger.txt" if "burger" in suffix else "burger_count.txt"
+        file_path = tmp_path / name
+        f = file_path.open("w+")
+        f.name = str(file_path)  # besoin de ce champ pour le logging
+        return f
 
-    def custom_open(file, mode="r", *args, **kwargs):
-        if file == "/tmp/burger.txt":
-            return real_open(tmp_burger_file, mode, *args, **kwargs)
-        elif file == "/tmp/burger_count.txt":
-            return real_open(tmp_count_file, mode, *args, **kwargs)
-        return real_open(file, mode, *args, **kwargs)
-
-    monkeypatch.setattr(builtins, "open", custom_open)
+    monkeypatch.setattr("tempfile.NamedTemporaryFile", temp_file_mock)
 
     save_burger(test_burger)
 
-    with tmp_burger_file.open() as f:
-        assert "test cheese" in f.read()
+    burger_file = tmp_path / "burger.txt"
+    count_file = tmp_path / "burger_count.txt"
 
-    with tmp_count_file.open() as f:
-        assert int(f.read()) == BURGER_COUNT
+    assert burger_file.exists()
+    assert count_file.exists()
+
+    assert "cheddar" in burger_file.read_text()
+    assert str(BURGER_COUNT) in count_file.read_text()
+
+def test_main(monkeypatch, capsys):
+    inputs = iter(["bun", "beef", "ketchup", "cheddar"])
+    monkeypatch.setattr("builtins.input", lambda _: next(inputs))
+
+    # Import tardif du main pour éviter l’exécution au moment de l'import global
+    from burger import main
+
+    main()
+
+    captured = capsys.readouterr()
+    assert "Burger summary" in captured.out or "Total price" in captured.out
