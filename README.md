@@ -18,6 +18,14 @@
   </tr>
 </table>
 
+# Nombre de prompts utilisés pour en arriver là : 33
+
+Sur chatGPT 4o
+
+Beaucoup de prompts pour le test unitaire sur test_save_burger_creates_files avec des allers-retours de code non fonctionnels.
+
+Ruff semble OK, safety check aussi, problème avec Bandit : sur le fait que j'utilise des assert dans mes tests et il ne valide pas ça. Je pourrais ajouter --skip B101 dans le check de Bandit dans le CI ou trouver une alternative.
+
 # Utilisation des IA génératives comme appui à la programmation et au scripting pour la biologie
 
 ## Information pratique et programme
