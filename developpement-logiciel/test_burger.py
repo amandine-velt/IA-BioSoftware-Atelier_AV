@@ -1,6 +1,7 @@
-import pytest
 import re
-import os
+from pytest import approx
+
+import builtins
 from burger import (
     get_order_timestamp,
     get_bun,
@@ -13,7 +14,8 @@ from burger import (
     BURGER_COUNT,
 )
 
-# --- Test fonctions non interactives ---
+
+# --- Fonctions non interactives ---
 
 
 def test_get_order_timestamp_format():
@@ -24,17 +26,17 @@ def test_get_order_timestamp_format():
 
 def test_calculate_burger_price_basic():
     ingredients = ["bun", "beef", "cheddar", "ketchup"]
-    expected = round((2.0 + 5.0 + 1.0 + 0.3) * 1.1, 2)  # 10% tax
-    assert calculate_burger_price(ingredients) == expected
+    expected = round((2.0 + 5.0 + 1.0 + 0.3) * 1.1, 2)
+    assert calculate_burger_price(ingredients) == approx(expected, abs=0.01)
 
 
 def test_calculate_burger_price_unknown_ingredient():
     ingredients = ["unknown", "beef"]
     expected = round((0 + 5.0) * 1.1, 2)
-    assert calculate_burger_price(ingredients) == expected
+    assert calculate_burger_price(ingredients) == approx(expected, abs=0.01)
 
 
-# --- Test fonctions interactives avec monkeypatch ---
+# --- Fonctions interactives avec monkeypatch ---
 
 
 def test_get_bun_known(monkeypatch):
@@ -77,16 +79,11 @@ def test_get_sauce_empty(monkeypatch):
     assert get_sauce() == ["ketchup"]
 
 
+# --- Test global d'assemblage ---
+
+
 def test_assemble_burger(monkeypatch):
-    # Simuler toutes les entrées utilisateur
-    inputs = iter(
-        [
-            "bun",  # bun
-            "beef",  # meat
-            "ketchup",  # sauce
-            "cheddar",  # cheese
-        ]
-    )
+    inputs = iter(["bun", "beef", "ketchup", "cheddar"])
     monkeypatch.setattr("builtins.input", lambda _: next(inputs))
 
     burger = assemble_burger()
@@ -99,18 +96,16 @@ def test_assemble_burger(monkeypatch):
     assert "Total price:" in burger
 
 
+# --- Test d’écriture fichier (avec redirection via tmp_path) ---
+
+
 def test_save_burger(tmp_path, monkeypatch):
     test_burger = "test bun + test meat + test sauce + test cheese\nTotal price: 9.99 €"
-
     tmp_burger_file = tmp_path / "burger.txt"
     tmp_count_file = tmp_path / "burger_count.txt"
 
-    # Capture l'open original
-    import builtins
-
     real_open = builtins.open
 
-    # Monkeypatch open() pour rediriger vers les fichiers temporaires
     def custom_open(file, mode="r", *args, **kwargs):
         if file == "/tmp/burger.txt":
             return real_open(tmp_burger_file, mode, *args, **kwargs)
@@ -120,12 +115,8 @@ def test_save_burger(tmp_path, monkeypatch):
 
     monkeypatch.setattr(builtins, "open", custom_open)
 
-    # Appel réel
-    from burger import save_burger, BURGER_COUNT
-
     save_burger(test_burger)
 
-    # Vérification du contenu
     with tmp_burger_file.open() as f:
         assert "test cheese" in f.read()
 

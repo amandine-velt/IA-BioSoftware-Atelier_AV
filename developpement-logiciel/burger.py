@@ -2,6 +2,7 @@ import os
 import time
 import logging
 from datetime import datetime
+import tempfile
 
 logging.basicConfig(level=logging.INFO)
 
@@ -156,16 +157,20 @@ def assemble_burger():
     last_burger = burger
     return burger
 
-
 def save_burger(burger):
     try:
-        with open("/tmp/burger.txt", "w") as f:
+        # Création d'un fichier temporaire sécurisé pour le burger
+        with tempfile.NamedTemporaryFile("w", delete=False, prefix="burger_", suffix=".txt") as f:
             f.write(burger)
+            burger_path = f.name
 
-        with open("/tmp/burger_count.txt", "w") as f:
+        # Idem pour le compteur de burgers
+        with tempfile.NamedTemporaryFile("w", delete=False, prefix="burger_count_", suffix=".txt") as f:
             f.write(str(BURGER_COUNT))
+            count_path = f.name
 
-        logging.info("Burger saved to /tmp/burger.txt")
+        logging.info(f"Burger saved to {burger_path}")
+        logging.info(f"Burger count saved to {count_path}")
     except Exception as e:
         logging.error(f"Error saving burger: {e}")
 
@@ -182,7 +187,6 @@ def main():
             logging.info("Burger assembly failed.")
     except Exception as e:
         logging.error(f"An unexpected error occurred: {e}")
-
 
 if __name__ == "__main__":
     main()
