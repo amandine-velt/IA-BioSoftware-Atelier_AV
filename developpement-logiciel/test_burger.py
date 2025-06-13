@@ -1,6 +1,8 @@
 import re
+import io
 import builtins
 from pytest import approx
+from pathlib import Path
 from burger import (
     get_order_timestamp,
     get_bun,
@@ -94,43 +96,73 @@ def test_assemble_burger(monkeypatch):
     assert "cheddar cheese" in burger
     assert "Total price:" in burger
 
-
 # --- Test d’écriture fichier avec fichier temporaire ---
-
-
 def test_save_burger_creates_files(tmp_path, monkeypatch):
+    import tempfile
+    import burger
+
     test_burger = "bun + beef + ketchup + cheddar cheese\nTotal price: 9.99 €"
+    created_paths = {}
 
-    # Monkeypatch NamedTemporaryFile pour écrire dans tmp_path
+    class FakeNamedTempFile:
+        def __init__(self, path):
+            self._file = open(path, "w", encoding="utf-8")
+            self.name = str(path)
+            self._path = path
+
+        def write(self, data):
+            return self._file.write(data)
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc_val, exc_tb):
+            self._file.close()
+
+        def close(self):
+            self._file.close()
+
+        def flush(self):
+            self._file.flush()
+
     def temp_file_mock(*args, **kwargs):
-        suffix = kwargs.get("suffix", "")
-        name = "burger.txt" if "burger" in suffix else "burger_count.txt"
-        file_path = tmp_path / name
-        f = file_path.open("w+")
-        f.name = str(file_path)  # besoin de ce champ pour le logging
-        return f
+        prefix = kwargs.get("prefix", "")
+        if "burger_count" in prefix:
+            path = tmp_path / "burger_count.txt"
+            created_paths["count"] = path
+        else:
+            path = tmp_path / "burger.txt"
+            created_paths["burger"] = path
+        return FakeNamedTempFile(path)
 
-    monkeypatch.setattr("tempfile.NamedTemporaryFile", temp_file_mock)
+    # Patch NamedTemporaryFile
+    monkeypatch.setattr(tempfile, "NamedTemporaryFile", temp_file_mock)
 
-    save_burger(test_burger)
+    # Forcer BURGER_COUNT = 1
+    burger.BURGER_COUNT = 1
 
-    burger_file = tmp_path / "burger.txt"
-    count_file = tmp_path / "burger_count.txt"
+    # Appel de la fonction à tester
+    burger.save_burger(test_burger)
 
-    assert burger_file.exists()
-    assert count_file.exists()
+    # Récupération des chemins simulés
+    burger_file = created_paths["burger"]
+    count_file = created_paths["count"]
 
-    assert "cheddar" in burger_file.read_text()
-    assert str(BURGER_COUNT) in count_file.read_text()
+    # Vérifications
+    assert burger_file.exists(), "Le fichier burger.txt n’a pas été créé"
+    assert count_file.exists(), "Le fichier burger_count.txt n’a pas été créé"
+    assert "cheddar cheese" in burger_file.read_text()
+    assert int(count_file.read_text()) == 1
 
-def test_main(monkeypatch, capsys):
+def test_main(monkeypatch, caplog):
     inputs = iter(["bun", "beef", "ketchup", "cheddar"])
     monkeypatch.setattr("builtins.input", lambda _: next(inputs))
 
-    # Import tardif du main pour éviter l’exécution au moment de l'import global
     from burger import main
 
-    main()
+    with caplog.at_level("INFO"):
+        main()
 
-    captured = capsys.readouterr()
-    assert "Burger summary" in captured.out or "Total price" in captured.out
+    logs = "\n".join(caplog.messages)
+    assert "Total price" in logs
+
